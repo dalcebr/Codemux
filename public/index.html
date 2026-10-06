@@ -178,7 +178,7 @@ dialog input{width:100%;background:var(--bg);border:1px solid var(--bd);color:va
 .gl span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gl small{color:var(--mu)}
 pre.gout{background:#010409;border-radius:8px;padding:10px;font:12px/1.4 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all;max-height:170px;overflow:auto;margin:0}
 .gchipx{font-size:12px;background:var(--p2);border-radius:99px;padding:3px 9px;color:var(--mu)}
-</style></head><body>
+</style><link rel="stylesheet" href="ai.css"></head><body>
 <div id="desk"><div id="icons"></div></div>
 <div id="tb"><button id="start" title="Programas"><i data-i="grid"></i></button><div id="apps"></div><div id="ports"></div><span id="clk"></span></div>
 <div id="launcher"></div>
@@ -528,7 +528,7 @@ function pick(start,label='Abrir esta pasta',title='Abrir pasta'){return new Pro
   const B=d.querySelector('.btns'),b1=document.createElement('button'),b2=document.createElement('button');b1.textContent='Cancelar';b2.textContent=label;
   b1.onclick=()=>done(null);b2.onclick=()=>done(p);B.append(b1,b2)};
  d.onclose=()=>{d.remove();res(null)};d.showModal();draw()})}
-async function openFolder(p){root=p;sel=p;exp.clear();persist();openApp('code');sb.classList.add('on');$('#eEx').classList.add('on');tree()}
+async function openFolder(p){root=p;sel=p;exp.clear();persist();openApp('code');sb.classList.add('on');$('#eEx').classList.add('on');tree();document.dispatchEvent(new Event('tide-folder'))}
 async function chooseFolder(){const p=await pick(root);if(p!==null)openFolder(p)}
 
 /* edição */
@@ -592,7 +592,23 @@ const xk=$('#eXk');
 [['Tab',()=>indent(false)],['←',()=>{const p=Math.max(0,ta.selectionStart-1);ta.setSelectionRange(p,p);stat()}],['→',()=>{const p=Math.min(ta.value.length,ta.selectionEnd+1);ta.setSelectionRange(p,p);stat()}],
  ...[...'{}()[];:"\'`/\\=<>!&|$_-+*#.,'].map(c=>[c,()=>ins(c)])].forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;
  b.onmousedown=e=>e.preventDefault();b.onclick=()=>{if(cur){ta.focus({preventScroll:true});f()}};xk.append(b)});
-return{openFile,openFolder,dirty,layout,pick}})();
+/* integração IA (ai.js): contexto do editor e aplicação das mudanças feitas em disco pelo agente */
+function ctx(){return{root,active:cur?cur.path:'',dirty:tabs.filter(t=>t.text!==t.saved).map(t=>t.path)}}
+async function sync(changes){
+ const hit=(t,p)=>t.path===p||t.path.startsWith(p+'/'),reload=new Set();
+ for(const c of changes){
+  if(c.op==='rename'){tabs.forEach(t=>{if(hit(t,c.from)){t.path=c.to+t.path.slice(c.from.length);t.name=t.path.split('/').pop()}});if(exp.delete(c.from))exp.add(c.to);if(sel===c.from)sel=c.to}
+  else if(c.op==='delete'){const gone=tabs.filter(t=>hit(t,c.path)&&t.text===t.saved);
+   if(gone.length){const had=cur&&gone.includes(cur);tabs=tabs.filter(t=>!gone.includes(t));
+    if(had){cur=null;if(tabs.length)activate(tabs[0]);else{ta.value='';paint();welcome();stat()}}}
+   exp.delete(c.path);if(sel===c.path)sel=root}
+  else if(c.op==='write'&&tabs.some(t=>t.path===c.path))reload.add(c.path)}
+ for(const p of reload){const t=tabs.find(x=>x.path===p);if(!t)continue;
+  if(t.text!==t.saved){toast(t.name+' foi alterado pela IA, mas você tem edições não salvas aqui');continue}
+  try{const {text}=await api('/api/read?path='+encodeURIComponent(p));if(text===t.text)continue;t.text=t.saved=text;
+   if(t===cur){const s=Math.min(ta.selectionStart,text.length);ta.value=text;ta.setSelectionRange(s,s);paint();stat()}}catch{}}
+ renderTabs();stat();tree();document.dispatchEvent(new Event('tide-fs'))} // tide-fs: atualiza o app Git
+return{openFile,openFolder,dirty,layout,pick,ctx,sync}})();
 
 /* ===== Git / GitHub ===== */
 const Git=(()=>{
@@ -692,4 +708,5 @@ return{open,refresh}})();
 
 /* ===== Início ===== */
 renderLauncher();renderIcons();renderTb();clk();setInterval(clk,20000);openApp('files');
-</script></body></html>
+</script>
+<script src="ai.js"></script></body></html>

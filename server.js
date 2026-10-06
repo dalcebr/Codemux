@@ -9,6 +9,7 @@ const MIME={'.html':'text/html;charset=utf-8','.js':'text/javascript','.css':'te
 const safe=(rel='')=>{const p=path.resolve(ROOT,'.'+path.sep+rel);if(p!==ROOT&&!p.startsWith(ROOT+path.sep))throw new Error('Caminho inválido');return p};
 const clean=n=>{if(!n||/[\/\\]/.test(n)||n==='.'||n==='..')throw new Error('Nome inválido');return n};
 const body=req=>new Promise((ok,no)=>{let s='';req.on('data',c=>s+=c);req.on('end',()=>{try{ok(s?JSON.parse(s):{})}catch(e){no(e)}});req.on('error',no)});
+const AI=require('./ai')({ROOT,safe}); // módulo de IA (DeepSeek) - ver ai.js
 
 // ---- terminais (várias sessões) ----
 const sessions=new Map();let nid=1;
@@ -79,6 +80,7 @@ http.createServer(async(req,res)=>{
       ws.on('finish',()=>send(200,{ok:1}));ws.on('error',e=>send(400,{error:e.message}));return;
     }
     const b=await body(req);
+    if(u.pathname.startsWith('/api/ai/'))return AI.handle(k,b,res,send);
     switch(k){
       case 'GET /api/list':{
         const dir=safe(q.get('path')||'');
