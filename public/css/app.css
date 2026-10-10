@@ -136,9 +136,11 @@ dialog input{width:100%;background:var(--bg);border:1px solid var(--bd);color:va
 .erow{display:flex;min-width:100%;min-height:100%;width:max-content}
 .gut,#eHl,#eTa,#fm{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:var(--fs);line-height:20px;letter-spacing:0;font-variant-ligatures:none}
 .gut{position:sticky;left:0;z-index:2;background:var(--ed-bg);color:var(--ed-mu);text-align:right;padding:8px 10px 8px 8px;min-width:46px;white-space:pre;user-select:none}
-.inner{flex:1;position:relative}
+/* flex-basis:auto (e não 0%) para que a largura intrínseca do código seja respeitada:
+   com flex:1 (basis 0%) o .erow{width:max-content} colapsava e o código não aparecia direito. */
+.inner{flex:1 1 auto;min-width:0;position:relative}
 #eHl,#eTa{margin:0;padding:8px 16px 8px 8px;white-space:pre;tab-size:2;border:0}
-#eHl{color:var(--ed-tx);pointer-events:none}
+#eHl{color:var(--ed-tx);pointer-events:none;min-height:100%;overflow:hidden}
 #eTa{position:absolute;inset:0;width:100%;height:100%;background:none;color:transparent;caret-color:var(--ed-hi);resize:none;outline:0;overflow:hidden}
 #eTa::selection{background:var(--ed-selbg);color:transparent}
 #eHl .k{color:var(--sy-k)}#eHl .s{color:var(--sy-s)}#eHl .n{color:var(--sy-n)}#eHl .c{color:var(--sy-c)}

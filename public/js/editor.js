@@ -30,7 +30,8 @@ function hi(code,l){
  for(const m of code.matchAll(RX[l==='json'?'js':l])){
   out+=esc(code.slice(last,m.index));last=m.index+m[0].length;
   let g=1;while(g<5&&m[g]===undefined)g++;
-  out+=`<span class="${CL[g]}">${esc(m[0])}</span>`}
+  const cls=CL[g]||''; // nunca deixa "undefined" na classe (grupo fora do intervalo)
+  out+=cls?`<span class="${cls}">${esc(m[0])}</span>`:esc(m[0])}
  return out+esc(code.slice(last))}
 function paint(){raf=0;const t=ta.value;hl.innerHTML=hi(t,cur?lang(cur.name):'txt')+'\n';
  const n=t.split('\n').length;let g='';for(let i=1;i<=n;i++)g+=(i>1?'\n':'')+i;gut.textContent=g}
@@ -47,9 +48,11 @@ function reveal(){const v=ta.value,p=ta.selectionStart,b=v.slice(0,p),ln=b.split
  const x=gw+8+col*cw,y=ln*20+8,vw=sc.clientWidth,vh=sc.clientHeight;
  if(y<sc.scrollTop)sc.scrollTop=Math.max(0,y-8);else if(y+28>sc.scrollTop+vh)sc.scrollTop=y+28-vh;
  if(x<sc.scrollLeft+gw)sc.scrollLeft=Math.max(0,x-gw-24);else if(x+16>sc.scrollLeft+vw)sc.scrollLeft=x+16-vw}
-function layout(){const w=box.clientWidth;if(!w)return;box.classList.toggle('narrow',w<580);
+const edEl=box.querySelector('.ed'); // referência estável ao contêiner do editor (define --fs)
+function applyFont(){if(edEl)edEl.style.setProperty('--fs',fs+'px')}
+function layout(){applyFont();const w=box.clientWidth;if(!w)return;box.classList.toggle('narrow',w<580);
  if(!seen){seen=1;sb.classList.toggle('on',w>=580);$('#eEx').classList.toggle('on',w>=580);tree()}
- box.querySelector('.ed').style.setProperty('--fs',fs+'px');measure()}
+ measure()}
 new ResizeObserver(layout).observe(box);
 
 /* abas */
@@ -193,7 +196,7 @@ $('#eNF').onclick=()=>newItem('file');$('#eND').onclick=()=>newItem('dir');$('#e
 $('#eOpen').onclick=chooseFolder;$('#wOpen').onclick=chooseFolder;$('#wNew').onclick=()=>newItem('file');
 $('#eSv').onclick=saveCur;$('#eFd').onclick=findOpen;
 $('#eUn').onclick=()=>{ta.focus({preventScroll:true});document.execCommand('undo')};$('#eRe').onclick=()=>{ta.focus({preventScroll:true});document.execCommand('redo')};
-const zoom=d=>{fs=Math.max(10,Math.min(24,fs+d));persist();box.querySelector('.ed').style.setProperty('--fs',fs+'px');measure()};
+const zoom=d=>{fs=Math.max(10,Math.min(24,fs+d));persist();applyFont();measure()};
 $('#eFm').onclick=()=>zoom(-1);$('#eFp').onclick=()=>zoom(1);
 const xk=$('#eXk');
 [['Tab',()=>indent(false)],['←',()=>{const p=Math.max(0,ta.selectionStart-1);ta.setSelectionRange(p,p);stat()}],['→',()=>{const p=Math.min(ta.value.length,ta.selectionEnd+1);ta.setSelectionRange(p,p);stat()}],
