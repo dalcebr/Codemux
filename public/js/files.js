@@ -111,6 +111,7 @@ function rowMenu(i,anchor){const p=join(cwd,i.name),isF=!i.dir,shell=document.do
  menu(anchor||{x:innerWidth/2,y:innerHeight/2},[
   {l:i.dir?'Abrir':(isArc(i.name)?'Extrair aqui':'Abrir no editor'),i:i.dir?'folder':(isArc(i.name)?'archive':'code2'),f:()=>isArc(i.name)?run(async()=>{toast('Extraindo…');await api('/api/extract',{path:p});toast('Extraído');go(cwd)}):open(i)},
   !shell&&i.dir&&{l:'Abrir no editor',i:'code',f:()=>Ed.openFolder(p)},!shell&&i.dir&&{l:'Abrir no Git',i:'git',f:()=>Git.open(p)},
+  shell&&i.dir&&{l:'Abrir como projeto',i:'code',f:()=>Ed.openFolder(p)},
   isF&&!isArc(i.name)&&document.documentElement.dataset.ui==='shell'&&{l:'Perguntar à IA',i:'sparkle',f:()=>Cmx.lazy('work').then(()=>Cmx.mod.work.askAboutFile(p))},
   {sep:1},{l:'Renomear',i:'edit',hint:'F2',f:()=>rename(i)},{l:'Copiar',i:'copy',f:()=>setClip('copy',[i.name])},{l:'Mover',i:'scissors',f:()=>setClip('move',[i.name])},{l:'Mover para…',i:'folder',f:()=>moveTo([i.name])},
   isF&&{l:'Duplicar',i:'files',f:()=>dup(i)},{l:'Copiar caminho',i:'paste',f:()=>copyPath(i)},{l:'Informações',i:'info',f:()=>info(i)},

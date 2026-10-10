@@ -9,8 +9,8 @@ sel=root;
 const persist=()=>{try{localStorage.setItem('tide-ed',JSON.stringify({root,fs}))}catch{}};
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const dirOf=p=>p.includes('/')?p.slice(0,p.lastIndexOf('/')):'';
-const LANG={js:'js',mjs:'js',cjs:'js',jsx:'js',ts:'js',tsx:'js',json:'json',html:'html',htm:'html',vue:'html',xml:'html',svg:'html',css:'css',scss:'css',py:'py',sh:'sh',bash:'sh'};
-const LN={js:'JavaScript',json:'JSON',html:'HTML',css:'CSS',py:'Python',sh:'Shell',txt:'Texto'};
+const LANG={js:'js',mjs:'js',cjs:'js',jsx:'js',ts:'js',tsx:'js',json:'json',html:'html',htm:'html',vue:'html',xml:'html',svg:'html',css:'css',scss:'css',less:'css',py:'py',sh:'sh',bash:'sh',zsh:'sh',yml:'yaml',yaml:'yaml',md:'md',markdown:'md',go:'go',rs:'go',java:'go',c:'go',h:'go',cpp:'go',cc:'go',hpp:'go',cs:'go',php:'go',rb:'py',sql:'sql',ini:'ini',conf:'ini',toml:'ini',env:'ini'};
+const LN={js:'JavaScript',json:'JSON',html:'HTML',css:'CSS',py:'Python',sh:'Shell',yaml:'YAML',md:'Markdown',go:'Código',sql:'SQL',ini:'Configuração',txt:'Texto'};
 const lang=n=>LANG[(n.split('.').pop()||'').toLowerCase()]||'txt';
 const KW={js:'async|await|break|case|catch|class|const|continue|default|do|else|export|extends|false|finally|for|from|function|if|import|in|instanceof|interface|let|new|null|of|return|static|super|switch|this|throw|true|try|type|typeof|undefined|var|void|while|yield',
  py:'and|as|async|await|break|class|continue|def|elif|else|except|False|finally|for|from|if|import|in|is|lambda|None|not|or|pass|raise|return|self|True|try|while|with|yield',
@@ -18,7 +18,12 @@ const KW={js:'async|await|break|case|catch|class|const|continue|default|do|else|
 const S1=/"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/.source,BT=/`(?:\\.|[^`\\])*`/.source,NU=/\b\d[\d.]*\b/.source,BC=/\/\*[\s\S]*?\*\//.source,TQ=/"""[\s\S]*?"""|'''[\s\S]*?'''/.source;
 const mk=(c,s,k)=>new RegExp(`(${c})|(${s})|(${NU})|(\\b(?:${k})\\b)`,'g');
 const RX={js:mk(/\/\/.*/.source+'|'+BC,S1+'|'+BT,KW.js),py:mk('#.*',TQ+'|'+S1,KW.py),sh:mk('#.*',S1,KW.sh),
- css:new RegExp(`(${BC})|(${S1})|(#[0-9a-fA-F]{3,8}\\b|\\b\\d+(?:\\.\\d+)?(?:px|r?em|%|vh|vw|ms|s|deg)?)|(@[\\w-]+|[\\w-]+(?=\\s*:))`,'g')};
+ css:new RegExp(`(${BC})|(${S1})|(#[0-9a-fA-F]{3,8}\\b|\\b\\d+(?:\\.\\d+)?(?:px|r?em|%|vh|vw|ms|s|deg)?)|(@[\\w-]+|[\\w-]+(?=\\s*:))`,'g'),
+ yaml:new RegExp(`(#.*)|(${S1})|(\\b\\d+(?:\\.\\d+)?\\b)|(^[ \\t-]*[\\w.$-]+(?=\\s*:)|\\b(?:true|false|null|yes|no|on|off)\\b)`,'gm'),
+ md:new RegExp(`(^#{1,6} .*$)|(${BT}|${S1})|(\\b\\d+(?:\\.\\d+)?\\b)|(^[ \\t]*[-*+] |^[ \\t]*\\d+\\. |\\*\\*[^*]+\\*\\*|__[^_]+__|\\[[^\\]]+\\]\\([^)]+\\)|^> )`,'gm'),
+ go:mk(/\/\/.*/.source+'|'+BC,S1+'|'+BT,'break|case|chan|const|continue|default|defer|else|fallthrough|for|func|go|goto|if|import|interface|map|package|range|return|select|struct|switch|type|var|true|false|nil|int|string|bool|byte|rune|error|float64|float32|int64|int32|uint|make|new|append|len|cap|copy|delete|panic|recover'),
+ sql:new RegExp(`(--.*|${BC})|(${S1})|(\\b\\d+(?:\\.\\d+)?\\b)|(\\b(?:SELECT|FROM|WHERE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|ALTER|DROP|INDEX|JOIN|LEFT|RIGHT|INNER|OUTER|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|AS|AND|OR|NOT|NULL|PRIMARY|KEY|FOREIGN|REFERENCES|DEFAULT|UNIQUE|DISTINCT|COUNT|SUM|AVG|MIN|MAX|CASE|WHEN|THEN|ELSE|END|UNION|ALL|EXISTS|IN|BETWEEN|LIKE|IS)\\b)`,'gi'),
+ ini:new RegExp(`([;#].*)|(${S1})|(\\b\\d+(?:\\.\\d+)?\\b)|(^\\s*\\[[^\\]]+\\]|^\\s*[\\w.$-]+(?=\\s*=))`,'gm')};
 const CL=['','c','s','n','k'];
 function hi(code,l){
  if(code.length>300000||l==='txt')return esc(code);
@@ -72,11 +77,16 @@ function activate(t){
  const d=dirOf(t.path);if(root===''||d===root||d.startsWith(root+'/')){sel=d;}
  if(!matchMedia('(pointer:coarse)').matches)ta.focus({preventScroll:true});tree()}
 async function openFile(p,o={}){
- openApp('code');document.dispatchEvent(new CustomEvent('tide-open',{detail:{path:p}}));const ex=tabs.find(t=>t.path===p);if(ex){activate(ex);if(o.line)gotoLine(o.line);return}
+ document.dispatchEvent(new CustomEvent('tide-open',{detail:{path:p}}));const ex=tabs.find(t=>t.path===p);
+ if(ex){openApp('code');activate(ex);if(o.line)gotoLine(o.line);return}
  try{const {text}=await api('/api/read?path='+encodeURIComponent(p));
-  const t={path:p,name:p.split('/').pop(),text,saved:text,sel:0,st:0,sl:0};tabs.push(t);activate(t);if(o.line)gotoLine(o.line);
+  const t={path:p,name:p.split('/').pop(),text,saved:text,sel:0,st:0,sl:0};tabs.push(t);
+  openApp('code');activate(t);if(o.line)gotoLine(o.line);
   if(box.classList.contains('narrow')){sb.classList.remove('on');$('#eEx').classList.remove('on')}}
  catch(e){toast(e.message)}}
+// abre um arquivo já com o texto em mãos (evita corrida com o render do shell)
+function openText(p,text,o={}){const ex=tabs.find(t=>t.path===p);if(ex){openApp('code');activate(ex);if(o.line)gotoLine(o.line);return}
+ const t={path:p,name:p.split('/').pop(),text,saved:text,sel:0,st:0,sl:0};tabs.push(t);openApp('code');activate(t);if(o.line)gotoLine(o.line)}
 async function reloadTab(t){try{const {text}=await api('/api/read?path='+encodeURIComponent(t.path));t.text=t.saved=text;t.conflict=false;
  if(t===cur){const p=Math.min(ta.selectionStart,text.length);ta.value=text;ta.setSelectionRange(p,p);paint()}renderTabs();stat()}catch(e){toast(e.message)}}
 // salva uma aba. Em conflito (o arquivo mudou no disco enquanto havia edição local) nunca sobrescreve sem perguntar; o autosave nunca sobrescreve.

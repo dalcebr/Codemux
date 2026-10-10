@@ -45,12 +45,23 @@ document.addEventListener('tide-ed',e=>{saveState();if(['dirty','save','tabs'].i
 
 // ---------- legado: adaptador "openApp" ----------
 window.openApp=id=>{const p=cur();if(!p){toast('Abra um projeto primeiro');return nav.projects()}
-  ({code:()=>nav.project(p.id,'work','editor'),term:()=>nav.project(p.id,'work','terminal'),files:()=>nav.project(p.id,'files'),git:()=>nav.project(p.id,'git')})[id]?.()};
+  const target={code:['work','editor'],term:['work','terminal'],files:['files'],git:['git']}[id];if(!target)return;
+  const [sec,tool]=target;
+  if(S.route.view==='project'&&S.route.section===sec&&(!tool||S.route.tool===tool)){
+    // já estamos na seção: garante que o host está visível e o módulo montado, sem re-renderizar tudo
+    const name=viewName(S.route),el=host(name);el.hidden=false;
+    const m=Cmx.mod[MOD[name]];
+    if(m&&m.show)m.show({shell:shellApi,project:p,route:S.route,name});
+    else if(!el.dataset.m)render(); // módulo ainda não montado: deixa o render montar
+    return}
+  nav.project(p.id,sec,tool)};
 Object.defineProperty(W,'git',{get:()=>S.route.view==='project'&&S.route.section==='git',configurable:true});
 // "Abrir no editor" / clonar: o shell decide (abrir projeto existente ou adicionar a pasta como projeto)
 document.addEventListener('tide-openfolder',async e=>{const path=e.detail.path;if(!path)return;
   let p=S.projects.find(x=>!x.trashed&&(path===x.path||path.startsWith(x.path+'/')));
   if(!p){try{p=(await Cmx.cm.post('projects/import',{path})).project;await loadProjects();toast('Adicionado como projeto: '+p.name)}catch(err){return toast(err.message)}}
+  else if(p.id===S.pid&&S.route.view==='project'&&S.route.section==='work'&&S.route.tool==='editor'){
+    const el=host('work');el.hidden=false;const m=Cmx.mod.work;if(m&&m.show)m.show({shell:shellApi,project:p,route:S.route,name:'work'});return} // já é o projeto atual: só garante o editor aberto
   nav.project(p.id,'work','editor')});
 
 // ---------- render ----------
