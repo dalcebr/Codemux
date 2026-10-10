@@ -1,0 +1,11 @@
+/* Tema do Codemux: tokens de cor. Escuro = padrão (idêntico ao visual original). */
+:root{--bg:#0d1117;--p:#161b22;--p2:#1f2630;--bd:#2b3340;--tx:#e6edf3;--mu:#8b949e;--ac:#58a6ff;--rd:#f85149;--ok:#3fb950;--warn:#e3b341;color-scheme:dark;
+ --tb:#0b0f14;--desk:radial-gradient(120% 90% at 15% 0%,#182a45 0%,#0d1117 62%);--term-bg:#010409;--shadow:#0009;
+ --ed-bg:#1e1e1e;--ed-side:#252526;--ed-bar:#333;--ed-tab:#2d2d2d;--ed-hover:#2a2d2e;--ed-sel:#37373d;--ed-input:#3c3c3c;--ed-tx:#d4d4d4;--ed-tx2:#ccc;--ed-mu:#858585;
+ --ed-stat:#007acc;--ed-btn:#0e639c;--ed-selbg:#264f78;--ed-hi:#fff;--ed-ov:#ffffff1a;--ed-ov2:#ffffff22;--ed-dim:#3a3a3a;--ed-code:#161616;
+ --sy-k:#569cd6;--sy-s:#ce9178;--sy-n:#b5cea8;--sy-c:#6a9955;--ai-ub:#264f78;--ai-ubt:#fff}
+:root[data-theme=light]{--bg:#ffffff;--p:#f6f8fa;--p2:#eaeef2;--bd:#d0d7de;--tx:#1f2328;--mu:#59636e;--ac:#0969da;--rd:#cf222e;--ok:#1a7f37;--warn:#9a6700;color-scheme:light;
+ --tb:#eef1f4;--desk:radial-gradient(120% 90% at 15% 0%,#dbe9ff 0%,#f6f8fa 62%);--term-bg:#f6f8fa;--shadow:#1f23282e;
+ --ed-bg:#ffffff;--ed-side:#f3f3f3;--ed-bar:#e2e2e2;--ed-tab:#ececec;--ed-hover:#e8e8e8;--ed-sel:#dfe3ee;--ed-input:#ebebeb;--ed-tx:#3b3b3b;--ed-tx2:#424242;--ed-mu:#616161;
+ --ed-stat:#0969da;--ed-btn:#0969da;--ed-selbg:#add6ff;--ed-hi:#000;--ed-ov:#0000001a;--ed-ov2:#00000024;--ed-dim:#cfcfcf;--ed-code:#f3f3f3;
+ --sy-k:#0000ff;--sy-s:#a31515;--sy-n:#098658;--sy-c:#008000;--ai-ub:#0969da;--ai-ubt:#fff}

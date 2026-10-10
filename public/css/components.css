@@ -1,0 +1,50 @@
+/* Componentes evoluídos: Arquivos, Terminal e extras do Editor (valem para as duas interfaces). */
+/* ---- Arquivos ---- */
+#files .fh{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--bd);flex:none}
+#files .fh .crumbs{flex:1;min-width:0;border:0;padding:2px}
+.fa{display:flex;gap:4px;flex:none}
+.fb{display:inline-flex;align-items:center;gap:6px;background:var(--p2);color:var(--tx);border:1px solid var(--bd);min-width:38px;height:38px;padding:0 10px;border-radius:10px;justify-content:center;font-size:14px}
+.fb:hover{border-color:var(--ac)}.fb .ic-s{width:18px;height:18px}
+.fb.pri{background:var(--ac);color:#fff;border-color:transparent;font-weight:600}
+:root[data-theme=dark] .fb.pri{color:#04121f}
+.fsrch{display:flex;gap:6px;padding:6px 8px;border-bottom:1px solid var(--bd);flex:none}
+.fsrch input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--bd);color:var(--tx);padding:9px 11px;border-radius:9px;font-size:16px}
+.fsrch[hidden],.fsel[hidden],.fclip[hidden]{display:none}
+.fsel{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--p2);border-bottom:1px solid var(--bd);flex-wrap:wrap;flex:none}
+.fsel b{font-size:14px;padding-left:4px}
+.fsel .sa{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.fsel .sa button,.fclip button{display:inline-flex;gap:6px;align-items:center;background:var(--bg);border:1px solid var(--bd);color:var(--tx);height:38px;padding:0 10px;border-radius:9px;font-size:13px}
+.fsel .sa button:disabled{opacity:.4}.fsel .sa button.danger{color:var(--rd)}
+.fsel .ic-s,.fclip .ic-s{width:16px;height:16px}
+.fclip{display:flex;align-items:center;gap:8px;padding:6px 8px;background:color-mix(in srgb,var(--ac) 14%,var(--p));border-bottom:1px solid var(--bd);flex:none}
+.fclip .ct{flex:1;display:flex;align-items:center;gap:8px;font-size:14px;min-width:0}
+.fclip button.pri{background:var(--ac);color:#fff;border-color:transparent}:root[data-theme=dark] .fclip button.pri{color:#04121f}
+#list .row{min-height:52px;outline-offset:-2px}
+.row .ckb{display:none;width:24px;height:24px;border-radius:7px;border:2px solid var(--mu);background:none;place-items:center;color:#fff;flex:none;padding:0}
+.row .ckb .ic-s{width:15px;height:15px}.row .ckb.on{background:var(--ac);border-color:var(--ac)}
+#list.selecting .row .ckb{display:grid}
+@media(hover:hover){#list .row:hover .ckb{display:grid}}
+.row.sel{background:color-mix(in srgb,var(--ac) 16%,transparent)}
+.row .nm{display:flex;flex-direction:column;gap:1px}.row .nm .n,.row .nm small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .nm small{color:var(--mu);font-size:12px}
+#list .row .mn{min-width:40px;min-height:40px;justify-content:center}
+.info{display:flex;flex-direction:column}.irow{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--bd);font-size:14px}
+.irow span{color:var(--mu);flex:none}.irow b{font-weight:500;text-align:right;word-break:break-all}
+/* ---- Terminal ---- */
+.th{display:flex;align-items:center;border-bottom:1px solid var(--bd);background:var(--p);flex:none}
+.th .stabs{flex:1;min-width:0;border:0}.tmore{background:none;border:0;color:var(--mu);width:42px;height:38px;display:grid;place-items:center;border-radius:8px;flex:none}
+.tmore:hover{background:var(--p2);color:var(--tx)}
+.stabs .tplus{padding:6px 10px}
+#out{color:var(--tx)}#out[hidden],.tempty[hidden]{display:none}
+.tempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--mu);text-align:center;padding:20px}
+.tempty button{display:inline-flex;gap:8px;align-items:center;background:var(--ac);color:#fff;border:0;border-radius:10px;padding:11px 18px;font-weight:600}
+:root[data-theme=dark] .tempty button{color:#04121f}
+.in input:disabled,.in button:disabled{opacity:.45}
+/* ---- Editor: extras (valem nas duas interfaces) ---- */
+html[data-ui=classic] #eCur,html[data-ui=classic] #eMore,html[data-ui=classic] #eFl{display:none}
+.et.cf{box-shadow:inset 0 -2px var(--warn)}.et.cf::before{content:'!';color:var(--warn);font-weight:800}
+.ecur,.ehb,#eMore{background:none;border:0;color:var(--ed-tx2);align-items:center}
+.ecur{display:none}.ehb{display:none}
+#eMore{min-width:30px;height:30px;border-radius:6px;display:grid;place-items:center}#eMore:hover,.ehb:hover,.ecur:hover{background:var(--ed-ov)}
+.ecur .cn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ecur .cc{background:var(--ed-btn);color:#fff;border-radius:99px;font-size:11px;min-width:18px;padding:1px 6px;text-align:center}.ecur .cc:empty{display:none}
+.ecur.dirty .cn::after{content:' ●';color:var(--warn)}

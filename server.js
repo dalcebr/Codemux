@@ -1,15 +1,16 @@
-// Termux IDE - sem dependências npm. Uso: node server.js
+// Codemux (ex-Termux IDE) - sem dependências npm. Uso: node server.js
 const http=require('http'),fs=require('fs'),net=require('net'),os=require('os'),path=require('path'),{spawn,execFile}=require('child_process');
 const ROOT=process.env.HOME||require('os').homedir();
 const PORT=+process.env.IDE_PORT||9000, HOST=process.env.IDE_HOST||'0.0.0.0';
 const PASS=process.env.IDE_PASSWORD||'';
 const PUB=path.join(__dirname,'public');
-const MIME={'.html':'text/html;charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml'};
+const MIME={'.html':'text/html;charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png','.ico':'image/x-icon'};
 
 const safe=(rel='')=>{const p=path.resolve(ROOT,'.'+path.sep+rel);if(p!==ROOT&&!p.startsWith(ROOT+path.sep))throw new Error('Caminho inválido');return p};
 const clean=n=>{if(!n||/[\/\\]/.test(n)||n==='.'||n==='..')throw new Error('Nome inválido');return n};
 const body=req=>new Promise((ok,no)=>{let s='';req.on('data',c=>s+=c);req.on('end',()=>{try{ok(s?JSON.parse(s):{})}catch(e){no(e)}});req.on('error',no)});
-const AI=require('./ai')({ROOT,safe}); // módulo de IA (DeepSeek) - ver ai.js
+const CM=require('./cm')({ROOT,safe,git}); // projetos, tarefas, histórico, lixeira, busca - ver cm/
+const AI=require('./ai')({ROOT,safe,CM}); // módulo de IA (DeepSeek) - ver ai.js
 
 // ---- terminais (várias sessões) ----
 const sessions=new Map();let nid=1;
@@ -62,7 +63,7 @@ http.createServer(async(req,res)=>{
   const send=(c,o)=>{res.writeHead(c,{'Content-Type':'application/json'});res.end(JSON.stringify(o))};
   if(PASS){const a=(req.headers.authorization||'').split(' ');
     const ok=a[0]==='Basic'&&Buffer.from(a[1]||'','base64').toString().split(':').slice(1).join(':')===PASS;
-    if(!ok){res.writeHead(401,{'WWW-Authenticate':'Basic realm="Termux IDE"'});return res.end('Senha necessária')}}
+    if(!ok){res.writeHead(401,{'WWW-Authenticate':'Basic realm="Codemux"'});return res.end('Senha necessária')}}
   try{
     if(!u.pathname.startsWith('/api/'))return serve(u.pathname,res);
     if(k==='GET /api/term'){
@@ -77,10 +78,11 @@ http.createServer(async(req,res)=>{
         else target=path.join(base,clean(q.get('name')))}
       else target=safe(q.get('path'));
       const ws=fs.createWriteStream(target);req.pipe(ws);
-      ws.on('finish',()=>send(200,{ok:1}));ws.on('error',e=>send(400,{error:e.message}));return;
+      ws.on('finish',()=>{send(200,{ok:1});const r=path.relative(ROOT,target).split(path.sep).join('/');k.endsWith('upload')?CM.onUpload(r):CM.onWrite(r)});ws.on('error',e=>send(400,{error:e.message}));return;
     }
     const b=await body(req);
     if(u.pathname.startsWith('/api/ai/'))return AI.handle(k,b,res,send);
+    if(u.pathname.startsWith('/api/cm/'))return await CM.handle(k,b,q,send); // await: erros viram resposta 400 em vez de derrubar o processo
     switch(k){
       case 'GET /api/list':{
         const dir=safe(q.get('path')||'');
@@ -93,12 +95,12 @@ http.createServer(async(req,res)=>{
         const f=safe(q.get('path'));if(fs.statSync(f).size>2e6)throw new Error('Arquivo muito grande (>2MB)');
         const buf=fs.readFileSync(f);if(buf.includes(0))throw new Error('Arquivo binário, não dá para editar');
         return send(200,{text:buf.toString('utf8')});}
-      case 'POST /api/mkdir':fs.mkdirSync(path.join(safe(b.dir),clean(b.name)));return send(200,{ok:1});
-      case 'POST /api/newfile':fs.writeFileSync(path.join(safe(b.dir),clean(b.name)),'',{flag:'wx'});return send(200,{ok:1});
+      case 'POST /api/mkdir':{const d=path.join(safe(b.dir),clean(b.name));fs.mkdirSync(d);CM.onFs('mkdir',path.relative(ROOT,d).split(path.sep).join('/'));return send(200,{ok:1});}
+      case 'POST /api/newfile':{const d=path.join(safe(b.dir),clean(b.name));fs.writeFileSync(d,'',{flag:'wx'});CM.onFs('newfile',path.relative(ROOT,d).split(path.sep).join('/'));return send(200,{ok:1});}
       case 'POST /api/rename':{
         const f=safe(b.path),t=path.join(path.dirname(f),clean(b.name));
         if(fs.existsSync(t))throw new Error('Já existe um item com esse nome');
-        fs.renameSync(f,t);return send(200,{ok:1});}
+        fs.renameSync(f,t);CM.onFs('rename',path.relative(ROOT,t).split(path.sep).join('/'),path.basename(t));return send(200,{ok:1});}
       case 'POST /api/delete':{
         const f=safe(b.path);if(f===ROOT)throw new Error('Não permitido');
         fs.rmSync(f,{recursive:true,force:true});return send(200,{ok:1});}
@@ -113,7 +115,7 @@ http.createServer(async(req,res)=>{
         return execFile(cmd,args,{maxBuffer:1e8},err=>{
           if(err){fs.rmSync(dest,{recursive:true,force:true});return send(400,{error:err.code==='ENOENT'?`Instale: pkg install ${cmd}`:'Falha ao extrair'})}
           send(200,{ok:1})});}
-      case 'GET /api/sessions':if(!sessions.size)newSession(ROOT);return send(200,{list:[...sessions.values()].map(x=>({id:x.id,name:x.name}))});
+      case 'GET /api/sessions':if(!sessions.size)newSession(ROOT);return send(200,{list:[...sessions.values()].map(x=>({id:x.id,name:x.name,cwd:path.relative(ROOT,x.cwd).split(path.sep).join('/')}))});
       case 'GET /api/ports':return send(200,{ports:await livePorts()});
       case 'POST /api/term/new':return send(200,{id:newSession(safe(b.path||'')).id});
       case 'POST /api/term/input':{const t=S(b.id);if(t.dead)start(t);t.proc.stdin.write(b.data);return send(200,{ok:1});}
@@ -156,12 +158,13 @@ http.createServer(async(req,res)=>{
             else if(xy[0]==='A'){await A(['reset','-q','--',f]);r=await A(['clean','-fd','--',f])}
             else r=await A(['restore','--source=HEAD','--staged','--worktree','--',f]);break;}
           default:throw new Error('Operação desconhecida');}
+        CM.onGit(b.path||'',b.op,!r.code,b.op==='commit'?b.message:b.op==='checkout'?b.branch:'');
         return send(200,{ok:!r.code,missing:r.missing,out:(r.out+r.err).trim()});}
       default:return send(404,{error:'Rota não encontrada'});
     }
   }catch(e){send(400,{error:e.code==='ENOENT'?'Não encontrado':e.message})}
 }).listen(PORT,HOST,()=>{
-  console.log(`\n  Termux IDE rodando${PASS?' (protegido por senha)':''}\n  Neste aparelho: http://localhost:${PORT}`);
+  console.log(`\n  Codemux rodando${PASS?' (protegido por senha)':''}\n  Neste aparelho: http://localhost:${PORT}`);
   try{for(const l of Object.values(os.networkInterfaces()))for(const i of l||[])if(i.family==='IPv4'&&!i.internal)console.log(`  Outros aparelhos: http://${i.address}:${PORT}`)}catch{}
   console.log('');
 });
